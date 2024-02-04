@@ -9,7 +9,7 @@ const user_collection = require("./models/userModel");
 const society_collection = require("./models/societyModel");
 const db = require(__dirname + '/config/db');
 const date = require(__dirname + '/date/date');
-
+const  nodemailer= require("nodemailer");
 const isAuth = (req, res, next) => {
 	if (req.session.isAuth) {
 		next();
@@ -46,16 +46,6 @@ app.get("/", (req, res) => {
 		res.redirect("/home");
 	}
 	else {
-		// Track page visits + users & societies registered
-		// visit_collection.Visit.findOne((err, pageVisit) => {
-		// 	if (pageVisit) {
-		// 		pageVisit.count += 1;
-		// 		// Rest of the code...
-		// 	} else {
-		// 		// Handle the case when no document is found
-		// 		console.error("No visit document found");
-		// 	}
-		// 	// pageVisit.count += 1;
 			society_collection.Society.find((err, foundSociety) => {
 				const societyCount = foundSociety.length
 				const cities = foundSociety.map(society => society.societyAddress.city.toLowerCase())
@@ -63,18 +53,10 @@ app.get("/", (req, res) => {
 				user_collection.User.find((err, foundUser) => {
 					const userCount = foundUser.length
 					res.render("index", { city: cityCount, society: societyCount, user: userCount});
-					// pageVisit.save(function () {
-					// 	const pageVisits = pageVisit.count
-					// })
 				})
 			})
-		// })
 	}
 });
-
-// app.get("/", (req, res) => {
-// 	res.redirect("/home");
-// });
 
 app.get("/login", (req, res) => {
 	req.session.isAuth = false;
@@ -718,9 +700,9 @@ app.post("/register", (req, res) => {
 	// Signup only if society not registered
 	society_collection.Society.findOne({ societyName: req.body.societyName }, function (err, result) {
 		if (!err && !result) {
+			//first register admin in the user databse
 			user_collection.User.register(
 				{
-					validation: 'approved',
 					isAdmin: true,
 					username: req.body.username,
 					societyName: req.body.societyName,
@@ -735,7 +717,7 @@ app.post("/register", (req, res) => {
 						res.redirect("/register");
 					} else {
 						passport.authenticate("local")(req, res, function () {
-							// Create new society in collection
+							//create new society
 							const society = new society_collection.Society({
 								societyName: user.societyName,
 								societyAddress: {
@@ -744,7 +726,8 @@ app.post("/register", (req, res) => {
 									district: req.body.district,
 									postalCode: req.body.postalCode
 								},
-								admin: user.username
+								admin: user.username,
+								isApproved:false,
 							});
 							society.save();
 							req.session.isAuth = true;
@@ -771,15 +754,55 @@ app.post("/register", (req, res) => {
 		}
 	});
 });
+app.post("/approveSociety", isAuth, (req, res) => {
+	const society_id = Object.keys(req.body.validate)[0]
+	const validate_state = Object.values(req.body.validate)[0]
+	society_collection.Society.updateOne(
+		{ _id: society_id },
+		{
+			$set: {
+				isApproved: validate_state
+			}
+		},
+		(err, result) => {
+			if (!err) {
+				society_collection.Society.find({_id:society_id},
+					async(err,society)=>{
+						const user= await user_collection.User.findOne({$and:[{isAdmin:true},{"societyName":`${society[0].societyName}`}]})
+						user_collection.User.updateOne(
+							{ _id: user._id},
+							{
+								$set:{
+										validation:'approved'
+									}
+							},
+							(err,result)=>{
+								res.redirect("/superAdminHome")
+							}
+						)
+					}
+				)
+			}
+		}
+	)
+})
 
 app.post("/login", async (req, res) => {
 	try {
 		const user = await user_collection.User.findOne({ username: req.body.username });
 		if (user) {
-			await passport.authenticate("local")(req, res, function () {
-				req.session.isAuth = true;
-				res.redirect("/home");
-			});
+			if(user.isSuperAdmin){
+				await passport.authenticate("local")(req, res, function () {
+					req.session.isAuth = true;
+					res.redirect("/superAdminHome");
+				});
+			}
+			else{
+				await passport.authenticate("local")(req, res, function () {
+					req.session.isAuth = true;
+					res.redirect("/home");
+				});
+			}
 		}
 		else {
 			res.redirect("/loginFailure");
@@ -789,6 +812,27 @@ app.post("/login", async (req, res) => {
 		console.log(err);
 	}
 });
+app.get("/superAdminHome",(req,res)=>{
+	if(req.isAuthenticated()){
+		society_collection.Society.find({isApproved:true},
+			(err,AllSocieties)=>{
+				if(!err && AllSocieties){
+					society_collection.Society.find({isApproved:false},
+						(err,foundAppliedSocieties)=>{
+							if(!err && foundAppliedSocieties){
+								res.render("superAdminHome",{
+									allSocieties:AllSocieties,
+									appliedSocieties:foundAppliedSocieties,
+								})
+							}
+						}
+					)
+				}
+			})
+	}else{
+		res.redirect("/login");
+	}
+})
 
 app.listen(
 	process.env.PORT || 3000,

@@ -85,7 +85,11 @@ const societySchema = mongoose.Schema(
                 type: Number,
                 default: 150
             },
-        }
+        },
+        isApproved: { 
+            type: Boolean, 
+            default: false 
+        },
     },
     {
 		timestamps: true,

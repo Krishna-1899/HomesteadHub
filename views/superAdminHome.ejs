@@ -29,6 +29,17 @@
           <li class="list-group-item flat-number">
             <i class="fas fa-house-user"></i> <%= society.societyName %>
           </li>
+          <li class="list-group-item flat-owner"><%= society.admin %></li>
+          <li class="list-group-item">
+            <% if (society.societyAddress) { %>
+              <div>Address : <%= society.societyAddress.address %></div>
+              <div>City : <%= society.societyAddress.city %></div>
+              <div>District : <%= society.societyAddress.district %></div>
+              <div>Postan Code : <%= society.societyAddress.postalCode %></div>
+            <% } else { %>
+              <p>No address information available.</p>
+            <% } %>
+          </li>
         </ul>
       </div>
     <% }) %>

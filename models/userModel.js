@@ -14,6 +14,11 @@ const userSchema = new mongoose.Schema (
 			required: true,
 			default: false
 		},
+		isSuperAdmin:{
+			type:Boolean,
+			required:false,
+			default:false,
+		},
 		societyName: {
 			type: String,
 			required: true
