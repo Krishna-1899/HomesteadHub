@@ -23,6 +23,10 @@ const userSchema = new mongoose.Schema (
 			type: String,
 			required: true
 		},
+		propertyNumber:{
+			type:Number,
+			required:true
+		},
 		flatNumber: {
 			type: String,
 			required: true

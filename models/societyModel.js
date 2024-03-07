@@ -7,6 +7,11 @@ const societySchema = mongoose.Schema(
             unique: true,
             required: true
         },
+        societyNumber:{
+            type:String,
+            unique:true,
+            required:true
+        },
         societyAddress: {
             address: {
                 type: String,

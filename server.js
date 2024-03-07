@@ -19,6 +19,7 @@ const isAuth = (req, res, next) => {
 };
 // Access environment variables
 dotenv.config();
+const stripe = require('stripe')(process.env.SECRET_KEY);
 const app = express()
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
@@ -40,6 +41,13 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 db.connectDB()
+const transporter = nodemailer.createTransport({
+	host:process.env.MAIL_HOST,
+	auth: {
+	  user: process.env.MAIL_USER,
+	  pass: process.env.MAIL_PASS,
+	},
+  });
 //this the / route from esociety
 app.get("/", (req, res) => {
 	if (req.session.isAuth) {
@@ -378,16 +386,23 @@ app.get("/editProfile", isAuth, (req, res) => {
 //payment success from esociety
 app.get('/success', async (req, res) => {
 	const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
-	const customer = await stripe.customers.retrieve(session.customer);
+	const stripeCustomer = await stripe.customers.create({
+		email: req.user.username
+		// Add any other customer-related information as needed
+	  });
+	req.user.stripeCustomerId = stripeCustomer.id;
+	req.user.save();
+	const customer = req.user.stripeCustomerId;
+	// const customer = await stripe.customers.retrieve(session.customer);
 	// Update payment made details for respective user
 	user_collection.User.findOne({ _id: req.user.id }, (err, foundUser) => {
-		foundUser.lastPayment.date = new Date(customer.created * 1000);
+		foundUser.lastPayment.date = new Date(session.created * 1000);
 		foundUser.lastPayment.amount = session.amount_total / 100;
-		foundUser.lastPayment.invoice = customer.invoice_prefix;
+		// foundUser.lastPayment.invoice = customer.invoice_prefix;
 		foundUser.save(function () {
-			const transactionDate = new Date(customer.created * 1000).toLocaleString().split(', ')[0]
+			const transactionDate = new Date(session.created * 1000).toLocaleString().split(', ')[0]
 			res.render("success", {
-				invoice: customer.invoice_prefix,
+				// invoice: customer.invoice_prefix,
 				amount: session.amount_total / 100,
 				date: transactionDate
 			});
@@ -407,7 +422,7 @@ app.post('/checkout-session', async (req, res) => {
 					currency: 'inr',
 					product_data: {
 						name: req.user.societyName,
-						images: ['https://www.flaticon.com/svg/vstatic/svg/3800/3800518.svg?token=exp=1615226542~hmac=7b5bcc7eceab928716515ebf044f16cd'],
+						// images: ['https://www.flaticon.com/svg/vstatic/svg/3800/3800518.svg?token=exp=1615226542~hmac=7b5bcc7eceab928716515ebf044f16cd'],
 					},
 					unit_amount: req.user.makePayment * 100,
 				},
@@ -415,10 +430,12 @@ app.post('/checkout-session', async (req, res) => {
 			},
 		],
 		mode: 'payment',
-		// success_url: "http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}",
-		// cancel_url: "http://localhost:3000/bill",
-		success_url: "https://e-society2022.herokuapp.com/success?session_id={CHECKOUT_SESSION_ID}",
-		cancel_url: "https://e-society2022.herokuapp.com/bill",
+		customer_email: req.user.username, // Pass the customer's email
+		// success_url: `http://localhost:3000/success?session_id=${session.id}`,
+		success_url: "http://localhost:4000/success?session_id={CHECKOUT_SESSION_ID}",
+		cancel_url: "http://localhost:4000/bill",
+		// success_url: "http://e-society2022.herokuapp.com/success?session_id={CHECKOUT_SESSION_ID}",
+		// cancel_url: "https://e-society2022.herokuapp.com/bill",
 	});
 
 	res.json({ id: session.id });
@@ -434,8 +451,25 @@ app.post("/approveResident", isAuth, (req, res) => {
 				validation: validate_state
 			}
 		},
-		(err, result) => {
+		async (err, result) => {
 			if (!err) {
+				user_collection.User.findById({_id:user_id},async(err,founduser)=>{
+					if(!err && founduser){
+						const mailOptions = {
+							from: process.env.MAIL_USER,
+							to: founduser.username,
+							subject: 'Your Registration Request is Approved',
+							text: `Hello,\n\nYour registration request has been approved. You can now log in to your account.\n\nBest regards,\nThe eSociety Team`,
+						};
+						await transporter.sendMail(mailOptions, (error, info) => {
+							if (error) {
+							  console.error("Error sending email:", error);
+							} else {
+							  console.log("Email sent:", info.response);
+							}
+						});
+					}
+				})
 				res.redirect("/residents");
 			}
 		}
@@ -654,10 +688,12 @@ app.post("/signup", (req, res) => {
 					flatNumber: req.body.flatNumber,
 					firstName: req.body.firstName,
 					lastName: req.body.lastName,
-					phoneNumber: req.body.phoneNumber
+					phoneNumber: req.body.phoneNumber,
+					propertyNumber:req.body.propertyNumber
 				},
 				req.body.password, function (err, user) {
 					if (err) {
+						console.log(err);
 						const failureMessage = "Sorry, this email address is not available. Please choose a different address.";
 						const hrefLink = "/signup";
 						const secondaryMessage = "Society not registered?";
@@ -706,6 +742,7 @@ app.post("/register", (req, res) => {
 					isAdmin: true,
 					username: req.body.username,
 					societyName: req.body.societyName,
+					propertyNumber:req.body.propertyNumber,
 					flatNumber: req.body.flatNumber,
 					firstName: req.body.firstName,
 					lastName: req.body.lastName,
@@ -720,6 +757,7 @@ app.post("/register", (req, res) => {
 							//create new society
 							const society = new society_collection.Society({
 								societyName: user.societyName,
+								societyNumber:req.body.societyNumber,
 								societyAddress: {
 									address: req.body.address,
 									city: req.body.city,
@@ -835,6 +873,6 @@ app.get("/superAdminHome",(req,res)=>{
 })
 
 app.listen(
-	process.env.PORT || 3000,
+	process.env.PORT || 4000,
 	console.log("Server started at ", process.env.PORT || 3000)
 );
