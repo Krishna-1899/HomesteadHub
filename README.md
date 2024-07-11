@@ -1,11 +1,11 @@
-# [E-Society](https://e-society2022.herokuapp.com/) - Community Management System
+# [HomeStead-Hub]Community Management System
 
-E-Society is a modular, API-Centric, and multi-tenant Community Management System. 
+HomeStead-Hub is a modular, API-Centric, and multi-tenant Community Management System. 
 It is capable of simplifying everyday living for your housing society. 
 Manage accounts, due payments, resolve complaints and keep the community up-to-date with all that’s going on in the society-to a single click.
 Easy for the management committee and residents.
 
-<!-- ### Deployed website link => [https://e-society2022.herokuapp.com/](https://e-society2022.herokuapp.com/) -->
+<!-- ### Deployed website link => [https://HomeStead-Hub2022.herokuapp.com/](https://HomeStead-Hub2022.herokuapp.com/) -->
 
 ## User types
 
@@ -58,10 +58,13 @@ At this point, you have all the necessary files to run the projet. You will stil
 
 ## Configuration of .env file
 .env file constists of two variables
-- MONGO_URI = mongodb+srv://{username}:{password}@cluster-society.xduxu.mongodb.net/societyDB?retryWrites=true&w=majority
-- SECRET_KEY = sk_test_51LRWpWSFFrMuplgrwEOm(Key from Stripe Payment Gateway)
+- MONGO_URI = 
+- SECRET_KEY = (Key from Stripe Payment Gateway)
+- MAIL_HOST = smtp.gmail.com
+- MAIL_PASS = (Your app password)
+- MAIL_USER = (Your email fro sending email)
 
-Create a new project on MongoDB with the name "E-Society". And a cluster named "Cluster-Society" under the same project.
+Create a new project on MongoDB with the name "HomeStead-Hub". And a cluster named "Cluster-Society" under the same project.
 Use the username, password of your new project in the above string.
 
 ## Contributions

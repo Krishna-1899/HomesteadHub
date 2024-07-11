@@ -1,0 +1,29 @@
+<!-- Residents collection -->
+<%- include('partials/headerSuperAdmin') %>
+<div style="padding:4%; padding-top:0%; font-family:sans-serif;font-size: 15px;">
+  <h2 style="background-color:rgb(51, 51, 51); padding:18px;color:white; text-align: center; border-radius: 1rem; font-size: 20px; max-width: 1000px; margin: auto; margin-bottom: 20px;">
+        <%= society.societyName %>
+  </h2>
+  <div class="flex-container">
+        <ul class="list-group text-center width:max-content">
+          <li class="list-group-item flat-number">
+            <i class="fas fa-house-user"></i> Society-Name: <%= society.societyName %>
+          </li>
+          <li class="list-group-item flat-owner">Admin Email-Id:<%= society.admin %></li>
+          <li class="list-group-item flat-owner">Approved: <%= society.isApproved %></li>
+          <li class="list-group-item flat-owner">Noticeboard:<%= society.noticeboard %></li>
+          <li class="list-group-item">
+            <% if (society.societyAddress) { %>
+              <div>Address : <%= society.societyAddress.address %></div>
+              <div>City : <%= society.societyAddress.city %></div>
+              <div>District : <%= society.societyAddress.district %></div>
+              <div>Postan Code : <%= society.societyAddress.postalCode %></div>
+            <% } else { %>
+              <p>No address information available.</p>
+            <% } %>
+          </li>
+        </ul>
+  </div>
+</div>
+  
+<!-- <%- include('partials/footer') %> -->

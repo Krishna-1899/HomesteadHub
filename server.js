@@ -212,6 +212,31 @@ app.post("/notice/:id", isAuth, (req, res) => {
 	}
 })
 
+//edit notice by id
+// app.post("/editnotice/:id",isAuth,(req,res)=>{
+// 	if(req.isAuthenticated()){
+// 		society_collection.Society.findOne({societyName:req.user.societyName},(err,foundSociety)=>{
+// 			if(!err && foundSociety){
+// 				const index = foundSociety.noticeboard.findIndex(x => x._id == req.params.id);
+//                 if (index !== -1) {
+//                     // Update the notice details based on request body
+//                     const updatedNotice = req.body; // Assuming req.body contains updated notice details
+//                     foundSociety.noticeboard[index] = updatedNotice;
+                    
+//                     // Save the updated society document
+//                     foundSociety.save((err) => {
+//                         if (err) {
+//                             console.error("Error saving updated notice:", err);
+//                             res.status(500).send("Internal Server Error");
+//                         } else {
+//                             res.redirect("/noticeboard"); // Redirect to noticeboard after successful update
+//                         }
+//                     });
+// 				}
+// 			}
+// 		})
+// 	}
+// })
 //bill route from esociety
 app.get("/bill", isAuth, (req, res) => {
 	if (req.isAuthenticated() && req.user.validation == 'approved') {
@@ -871,6 +896,25 @@ app.get("/superAdminHome",(req,res)=>{
 		res.redirect("/login");
 	}
 })
+
+app.get('/society/:id', async (req, res) => {
+	try {
+		console.log(req.params.id)
+	  const societyId = req.params.id;
+	  // Fetch the detailed information about the society using the societyId
+	  const society = await society_collection.Society.findById(societyId); // Example: Fetch society from database
+  
+	  if (!society) {
+		return res.status(404).send('Society not found');
+	  }
+	  console.log(society);
+	  // Render a new view to display detailed information about the society
+	  res.render('societyDetails', { society }); // Render a view named 'societyDetails' with the fetched society data
+	} catch (error) {
+	  console.error('Error fetching society details:', error);
+	  res.status(500).send('Internal Server Error');
+	}
+  });
 
 app.listen(
 	process.env.PORT || 4000,

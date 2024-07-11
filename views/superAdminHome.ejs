@@ -24,8 +24,8 @@
   </h2>
   <div class="flex-container">
     <% allSocieties.forEach((society) => { %>
-      <div>
-        <ul class="list-group zoom">
+      <a href="/society/<%=society._id%>" style="text-decoration: none;">
+        <ul class="list-group ">
           <li class="list-group-item flat-number">
             <i class="fas fa-house-user"></i> <%= society.societyName %>
           </li>
@@ -41,7 +41,7 @@
             <% } %>
           </li>
         </ul>
-      </div>
+      </a>
     <% }) %>
   </div>
 </div>

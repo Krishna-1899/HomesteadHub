@@ -33,6 +33,13 @@
                         <%= notice.details %>
                       </p>
                     </div>
+                    <! -- edit notice button-->
+                      <% if(notice.subject
+                        !='Access all important announcements, notices and circulars here.' ) { %>
+                          <input type="button" class="btn1 btn-primary btn-sm text-uppercase center"
+                            style="border-radius:3rem; max-width:180px; display: block; margin: auto"
+                            value="Edit Notice">
+                            <% } %>
                     <! -- delete notice button-->
                       <% if(isAdmin && notice.subject
                         !='Access all important announcements, notices and circulars here.' ) { %>
